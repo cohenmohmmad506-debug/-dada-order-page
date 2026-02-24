@@ -272,15 +272,12 @@
             };
 
             try {
-                // 这里替换成你的 Worker 地址！！！
-                const WORKER_URL = 'https://dada-order-relay.cohenmohmmad506.workers.dev';
-
-                const response = await fetch(WORKER_URL, {
+                const response = await fetch('https://dada-order-relay.cohenmohmmad506.workers.dev', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
                         // 如果以后加了 token 验证，取消下面这行的注释并填上你的 token
-                        // 'Authorization': 'Bearer 你自己设定的token'
+                        'Authorization': 'Bearer dada5048966'
                     },
                     body: JSON.stringify(orderData)
                 });
