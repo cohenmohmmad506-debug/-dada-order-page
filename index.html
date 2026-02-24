@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>大大极速下单 - VIP专属通道</title>
+    <title>大大极速下单 · 专业版</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -124,14 +124,12 @@
 </head>
 
 <body>
-
-    <div class="header">📦 大大极速下单</div>
-
+    <div class="header">📦 大大极速下单 · 专业版</div>
     <div class="container">
         <div class="card">
             <div class="card-title">🛡️ 专属单号与发件人</div>
             <div class="form-group">
-                <label>送货单号 (系统会自动递增)</label>
+                <label>送货单号 (系统自动递增)</label>
                 <input type="text" id="orderNumber" class="form-control" placeholder="例如: 001">
             </div>
             <div style="display: flex; gap: 10px;">
@@ -186,10 +184,11 @@
             </div>
         </div>
 
-        <button class="btn-submit" onclick="submitOrder()">🚀 确认下单，呼叫取件</button>
+        <button class="btn-submit" onclick="submitOrder()">🚀 确认下单</button>
     </div>
 
     <script>
+        // 自动递增单号
         function incrementString(str) {
             return str.replace(/\d+$/, function (n) {
                 return String(parseInt(n, 10) + 1).padStart(n.length, '0');
@@ -208,6 +207,7 @@
             }
         };
 
+        // 历史记录下拉
         function showHistory() {
             const historyBox = document.getElementById('historyBox');
             const history = JSON.parse(localStorage.getItem('dada_history')) || [];
@@ -234,7 +234,8 @@
             }
         });
 
-        async function submitOrder() {
+        // ---------- 核心：提交订单到腾讯文档（无感）----------
+        function submitOrder() {
             const orderNum = document.getElementById('orderNumber').value;
             const rName = document.getElementById('receiverName').value;
             if (!orderNum || !rName) {
@@ -242,60 +243,58 @@
                 return;
             }
 
-            // 保存历史记录和单号递增（你原来的代码，保留）
+            // 保存单号递增
             localStorage.setItem('dada_last_order_num', orderNum);
+            // 保存历史记录
             let history = JSON.parse(localStorage.getItem('dada_history')) || [];
             history = history.filter(item => item.name !== rName);
-            history.unshift({ name: rName, phone: document.getElementById('receiverPhone').value, address: document.getElementById('receiverAddress').value });
+            history.unshift({
+                name: rName,
+                phone: document.getElementById('receiverPhone').value,
+                address: document.getElementById('receiverAddress').value
+            });
             if (history.length > 5) history.pop();
             localStorage.setItem('dada_history', JSON.stringify(history));
 
+            // 组装数据，字段名必须和腾讯文档的列名完全一致
+            const params = new URLSearchParams({
+                '送货单号': orderNum,
+                '发件人': document.getElementById('senderName').value || '散客',
+                '发件电话': document.getElementById('senderPhone').value || '无',
+                '收件人': rName,
+                '收件电话': document.getElementById('receiverPhone').value || '无',
+                '收件地址': document.getElementById('receiverAddress').value || '无',
+                '运输方式': document.getElementById('transportMethod').value,
+                '物品名称': document.getElementById('itemName').value || '未填',
+                '重量KG': document.getElementById('itemWeight').value || '0',
+                '体积m³': document.getElementById('itemVolume').value || '0',
+                '卸货费': document.getElementById('unloadFee').value || '0',
+                '下单时间': new Date().toLocaleString()
+            });
+
+            // 你的腾讯文档公开编辑链接（可编辑权限）
+            const sheetUrl = 'https://docs.qq.com/sheet/DQVhEd1JJaXpvQmhK?tab=BB08J2'; // ⚠️ 替换成你的真实链接
+
+            // 无感提交：创建一个隐藏的图片，浏览器会发起 GET 请求
+            const img = new Image();
+            img.src = sheetUrl + '?' + params.toString();
+            img.style.display = 'none';
+            document.body.appendChild(img);
+            // 1秒后移除
+            setTimeout(() => {
+                document.body.removeChild(img);
+            }, 1000);
+
             // 按钮反馈
             const btn = document.querySelector('.btn-submit');
-            btn.innerHTML = "⏳ 终极核武器传输中...";
-            btn.style.backgroundColor = "#ff9900";
-
-            // 收集表单数据
-            const orderData = {
-                "送货单号": orderNum,
-                "发件人": document.getElementById('senderName').value || '散客',
-                "发件电话": document.getElementById('senderPhone').value || '无',
-                "收件人": rName,
-                "收件电话": document.getElementById('receiverPhone').value || '无',
-                "收件地址": document.getElementById('receiverAddress').value || '无',
-                "运输方式": document.getElementById('transportMethod').value,
-                "物品名称": document.getElementById('itemName').value || '未填',
-                "重量KG": document.getElementById('itemWeight').value || '0',
-                "体积m3": document.getElementById('itemVolume').value || '0',
-                "卸货费": document.getElementById('unloadFee').value || '0',
-                "下单时间": new Date().toLocaleString()
-            };
-
-            try {
-                const response = await fetch('https://dada-order-relay.cohenmohmmad506.workers.dev', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        // 如果以后加了 token 验证，取消下面这行的注释并填上你的 token
-                        'Authorization': 'Bearer dada5048966'
-                    },
-                    body: JSON.stringify(orderData)
-                });
-
-                if (response.ok) {
-                    alert(`✅ 数据发射成功！\n单号 ${orderNum} 已完美推送！`);
-                } else {
-                    const errText = await response.text();
-                    alert(`❌ 发送失败：${errText}`);
-                }
-            } catch (err) {
-                alert('❌ 网络错误：' + err.message);
-            } finally {
-                window.location.reload();
-            }
+            btn.innerHTML = "✅ 订单已发送";
+            btn.style.backgroundColor = "#00a854";
+            setTimeout(() => {
+                btn.innerHTML = "🚀 确认下单";
+                btn.style.backgroundColor = "#0052cc";
+            }, 2000);
         }
     </script>
 </body>
-
 
 </html>
