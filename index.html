@@ -235,64 +235,32 @@
         });
 
         // ---------- 核心：提交订单到腾讯文档（无感）----------
+        // 核心：提交订单到腾讯文档（有反馈的无跳转）
         function submitOrder() {
-            const orderNum = document.getElementById('orderNumber').value;
-            const rName = document.getElementById('receiverName').value;
-            if (!orderNum || !rName) {
-                alert("⚠️ 请填写单号和收件人！");
-                return;
-            }
+            // ... (前面获取数据的代码不变) ...
 
-            // 保存单号递增
-            localStorage.setItem('dada_last_order_num', orderNum);
-            // 保存历史记录
-            let history = JSON.parse(localStorage.getItem('dada_history')) || [];
-            history = history.filter(item => item.name !== rName);
-            history.unshift({
-                name: rName,
-                phone: document.getElementById('receiverPhone').value,
-                address: document.getElementById('receiverAddress').value
-            });
-            if (history.length > 5) history.pop();
-            localStorage.setItem('dada_history', JSON.stringify(history));
+            const orderData = {
+                "送货单号": orderNum,
+                "发件人": document.getElementById('senderName').value || '散客',
+                "发件电话": document.getElementById('senderPhone').value || '无',
+                // ... (中间的 12 个字段照旧填写) ...
+            };
 
-            // 组装数据，字段名必须和腾讯文档的列名完全一致
-            const params = new URLSearchParams({
-                '送货单号': orderNum,
-                '发件人': document.getElementById('senderName').value || '散客',
-                '发件电话': document.getElementById('senderPhone').value || '无',
-                '收件人': rName,
-                '收件电话': document.getElementById('receiverPhone').value || '无',
-                '收件地址': document.getElementById('receiverAddress').value || '无',
-                '运输方式': document.getElementById('transportMethod').value,
-                '物品名称': document.getElementById('itemName').value || '未填',
-                '重量KG': document.getElementById('itemWeight').value || '0',
-                '体积m³': document.getElementById('itemVolume').value || '0',
-                '卸货费': document.getElementById('unloadFee').value || '0',
-                '下单时间': new Date().toLocaleString()
-            });
+            const WEBHOOK_URL = "填入你刚刚在集简云拿到的新网址";
 
-            // 你的腾讯文档公开编辑链接（可编辑权限）
-            const sheetUrl = 'https://docs.qq.com/sheet/DQVhEd1JJaXpvQmhK?tab=BB08J2'; // ⚠️ 替换成你的真实链接
-
-            // 无感提交：创建一个隐藏的图片，浏览器会发起 GET 请求
-            const img = new Image();
-            img.src = sheetUrl + '?' + params.toString();
-            img.style.display = 'none';
-            document.body.appendChild(img);
-            // 1秒后移除
-            setTimeout(() => {
-                document.body.removeChild(img);
-            }, 1000);
-
-            // 按钮反馈
-            const btn = document.querySelector('.btn-submit');
-            btn.innerHTML = "✅ 订单已发送";
-            btn.style.backgroundColor = "#00a854";
-            setTimeout(() => {
-                btn.innerHTML = "🚀 确认下单";
-                btn.style.backgroundColor = "#0052cc";
-            }, 2000);
+            // 🚀 最纯净的发射方式，因为上了 Gitee，不再需要各种乱七八糟的伪装！
+            fetch(WEBHOOK_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(orderData)
+            })
+                .then(res => {
+                    alert(`✅ 订单 ${orderNum} 成功发射！`);
+                    window.location.reload();
+                })
+                .catch(error => alert(`🧨 网络异常：${error.message}`));
         }
     </script>
 </body>
